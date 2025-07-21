@@ -36,8 +36,9 @@ PIECES = {
 }
 
 class TetrisPiece:
-    def __init__(self, piece_type):
+    def __init__(self, piece_type, GRID_WIDTH=10):
         self.type = piece_type
+        self.GRID_WIDTH= GRID_WIDTH
         self.shape = PIECES[piece_type][0]  # Start with first rotation
         self.x = 4  # Start in middle of grid
         self.y = 1  # Start one row down to be more visible
@@ -48,10 +49,17 @@ class TetrisPiece:
         # TODO: Your son can implement piece rotation here!
         # Hint: To rotate a 2D array 90 degrees clockwise,
         # the new array[i][j] = old array[len-1-j][i]
+        self.shape = [list(row) for row in zip(*self.shape[::-1])]
         pass
     
     def move(self, dx, dy):
         """Move the piece by dx, dy"""
+        if dx < 0 and self.x + dx < 0:
+            return
+        if dx > 0 and self.x + dx + len(self.shape[0]) >self.GRID_WIDTH:
+            return  
+        #if dy > 0 and self.y + dy + len(self.shape) > GRID_HEIGHT:
+        #   return
         self.x += dx
         self.y += dy
     
@@ -63,3 +71,7 @@ class TetrisPiece:
                 if cell:
                     cells.append((self.x + x, self.y + y))
         return cells
+    def copy(self):
+        import copy
+        return copy.deepcopy(self)
+    

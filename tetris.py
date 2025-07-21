@@ -1,17 +1,19 @@
 import pygame
 import random
 import sys
+import time
 
 from pieces import TetrisPiece
+from game_logic import is_valid_position, place_piece, clear_lines, calculate_score
 
 # Initialize Pygame
 pygame.init()
 
 # Constants
 WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 650
+WINDOW_HEIGHT = 750
 GRID_WIDTH = 10
-GRID_HEIGHT = 20
+GRID_HEIGHT = 25
 CELL_SIZE = 28
 GRID_X_OFFSET = 50
 GRID_Y_OFFSET = 30
@@ -38,8 +40,11 @@ class TetrisGame:
         self.grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         self.running = True
         self.score = 0
+        self.fall_delay = 0.7  # seconds
+        self.last_fall_time = time.time()
         self.font = pygame.font.Font(None, 36)
-        self.current_piece = TetrisPiece('T')
+        #self.current_piece = TetrisPiece('T', GRID_WIDTH)  # Start with a T piece
+        self.current_piece = TetrisPiece(random.choice(['I', 'O', 'T', 'S', 'Z', 'J', 'L']), GRID_WIDTH)  # Randomly choose a piece
         
     def draw_grid(self):
         """Draw the game grid"""
@@ -71,19 +76,79 @@ class TetrisGame:
                 self.running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    self.current_piece.move(-1, 0)
+                    temp_piece = self.current_piece.copy()
+                    temp_piece.move(-1, 0)
+                    if is_valid_position(self.grid, temp_piece):
+                        self.current_piece.move(-1, 0)
                 elif event.key == pygame.K_RIGHT:
-                    self.current_piece.move(1, 0)
+                    temp_piece = self.current_piece.copy()
+                    temp_piece.move(1, 0)
+                    if is_valid_position(self.grid, temp_piece):
+                        self.current_piece.move(1, 0)
+                elif event.key == pygame.K_UP:
+                    temp_piece = self.current_piece.copy()
+                    temp_piece.rotate()
+                    if is_valid_position(self.grid, temp_piece):
+                        self.current_piece.rotate()
                 elif event.key == pygame.K_DOWN:
-                    self.current_piece.move(0, 1)
+                    temp_piece = self.current_piece.copy()
+                    temp_piece.move(0, 1)
+                    if is_valid_position(self.grid, temp_piece):
+                        self.current_piece.move(0, 1)
+                    else:
+                        # Place the piece on the grid
+                        place_piece(self.grid, self.current_piece)
+                        # Clear lines and update score
+                        lines_cleared = clear_lines(self.grid)
+                        self.score += calculate_score(lines_cleared, 1)
+                        self.current_piece = TetrisPiece(random.choice(['I', 'O', 'T', 'S', 'Z', 'J', 'L']), GRID_WIDTH)  # Randomly choose a piece
+                        if not is_valid_position(self.grid, self.current_piece):
+                            print("Game Over! Your score:", self.score)
+                            self.running = False
                
         pass
     
     def update(self):
         """Update game state"""
-        
-        # TODO: Add game logic here
-        # Your son can implement piece movement, line clearing, etc.
+        keys = pygame.key.get_pressed()
+        soft_drop = keys[pygame.K_DOWN]
+        current_time = time.time()
+        # Soft drop: move piece down every frame if down key is held
+        if soft_drop:
+            temp_piece = self.current_piece.copy()
+            temp_piece.move(0, 1)
+            if is_valid_position(self.grid, temp_piece):
+                self.current_piece.move(0, 1)
+            else:
+                place_piece(self.grid, self.current_piece)
+                lines_cleared = clear_lines(self.grid)
+                self.score += calculate_score(lines_cleared, 1)
+                self.current_piece = TetrisPiece(random.choice(['I', 'O', 'T', 'S', 'Z', 'J', 'L']), GRID_WIDTH)
+                if not is_valid_position(self.grid, self.current_piece):
+                            print("Game Over! Your score:", self.score)
+                            self.running = False
+               
+            self.last_fall_time = current_time  
+        # Normal gravity
+
+        elif current_time - self.last_fall_time > self.fall_delay:
+            temp_piece = self.current_piece.copy()
+            temp_piece.move(0, 1)
+            if is_valid_position(self.grid, temp_piece):
+                self.current_piece.move(0, 1)
+            else:
+                place_piece(self.grid, self.current_piece)
+                lines_cleared = clear_lines(self.grid)
+                self.score += calculate_score(lines_cleared, 1)
+                self.current_piece = TetrisPiece(random.choice(['I', 'O', 'T', 'S', 'Z', 'J', 'L']), GRID_WIDTH)
+                if not is_valid_position(self.grid, self.current_piece):
+                            print("Game Over! Your score:", self.score)
+                            self.running = False
+               
+            self.last_fall_time = current_time
+            
+            
+
         pass
     
     def draw(self):
